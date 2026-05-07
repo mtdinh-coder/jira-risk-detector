@@ -1,0 +1,41 @@
+name: Jira Risk Detector — Daily Scan
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # 9:00 AM ICT (UTC+7)
+  workflow_dispatch:       # manual trigger from GitHub UI
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Jira Risk Detector
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+          JIRA_EXTRA_JQL: ${{ secrets.JIRA_EXTRA_JQL }}
+          JIRA_EXCLUDE_ASSIGNEES: ${{ secrets.JIRA_EXCLUDE_ASSIGNEES }}
+          STALLED_DAYS: ${{ secrets.STALLED_DAYS }}
+          NUDGE_DAYS: ${{ secrets.NUDGE_DAYS }}
+          DUE_SOON_DAYS: ${{ secrets.DUE_SOON_DAYS }}
+          COMMENTS_FOR_SUMMARY: ${{ secrets.COMMENTS_FOR_SUMMARY }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TEAM_CHANNEL_ID: ${{ secrets.SLACK_TEAM_CHANNEL_ID }}
+          SLACK_TPM_EMAIL: ${{ secrets.SLACK_TPM_EMAIL }}
+          DRY_RUN: "false"
+          LOG_LEVEL: "INFO"
+        run: python scheduler.py --once
