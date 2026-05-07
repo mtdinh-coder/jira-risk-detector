@@ -1,0 +1,31 @@
+stages:
+  - scan
+
+jira-risk-scan:
+  stage: scan
+  image: python:3.11-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'   # allow manual trigger from GitLab UI
+  before_script:
+    - pip install -r requirements.txt
+  script:
+    - python scheduler.py --once
+  variables:
+    JIRA_BASE_URL: $JIRA_BASE_URL
+    JIRA_EMAIL: $JIRA_EMAIL
+    JIRA_API_TOKEN: $JIRA_API_TOKEN
+    JIRA_PROJECT_KEY: $JIRA_PROJECT_KEY
+    JIRA_EXTRA_JQL: $JIRA_EXTRA_JQL
+    JIRA_EXCLUDE_ASSIGNEES: $JIRA_EXCLUDE_ASSIGNEES
+    STALLED_DAYS: $STALLED_DAYS
+    NUDGE_DAYS: $NUDGE_DAYS
+    DUE_SOON_DAYS: $DUE_SOON_DAYS
+    COMMENTS_FOR_SUMMARY: $COMMENTS_FOR_SUMMARY
+    ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
+    ANTHROPIC_MODEL: $ANTHROPIC_MODEL
+    SLACK_BOT_TOKEN: $SLACK_BOT_TOKEN
+    SLACK_TEAM_CHANNEL_ID: $SLACK_TEAM_CHANNEL_ID
+    SLACK_TPM_EMAIL: $SLACK_TPM_EMAIL
+    DRY_RUN: "false"
+    LOG_LEVEL: "INFO"

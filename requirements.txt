@@ -1,0 +1,5 @@
+anthropic>=0.40.0
+requests>=2.32.0
+slack-sdk>=3.33.0
+python-dotenv>=1.0.1
+pydantic>=2.9.0
