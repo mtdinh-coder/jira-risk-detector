@@ -47,7 +47,7 @@ class Config:
             nudge_days=int(os.environ.get("NUDGE_DAYS", "1")),
             due_soon_days=int(os.environ.get("DUE_SOON_DAYS", "2")),
             comments_for_summary=int(os.environ.get("COMMENTS_FOR_SUMMARY", "8")),
-            anthropic_api_key=os.environ["ANTHROPIC_API_KEY"],
+            anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
             anthropic_model=os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-7"),
             slack_bot_token=os.environ["SLACK_BOT_TOKEN"],
             slack_team_channel_id=os.environ["SLACK_TEAM_CHANNEL_ID"],
