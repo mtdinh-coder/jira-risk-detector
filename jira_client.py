@@ -64,7 +64,8 @@ class JiraClient:
         """Fetch all active tickets for the workload chart (no at-risk filter)."""
         jql = (
             f'project in ({self._project_list()}) '
-            f'AND status in ("In Progress", "Blocked", "In Review") '
+            f'AND sprint in openSprints() '
+            f'AND status in ("To Do", "In Progress", "Blocked", "In Review") '
             f'AND assignee is not EMPTY'
         )
         if self.config.jira_extra_jql:
@@ -83,7 +84,9 @@ class JiraClient:
     def get_at_risk_tickets(self) -> list:
         jql = (
             f'project in ({self._project_list()}) '
-            f'AND status in ("In Progress", "Blocked", "In Review")'
+            f'AND sprint in openSprints() '
+            f'AND status in ("To Do", "In Progress", "Blocked", "In Review") '
+            f'AND issuetype in standardIssueTypes()'
         )
         if self.config.jira_extra_jql:
             jql += f" AND {self.config.jira_extra_jql}"
@@ -105,12 +108,46 @@ class JiraClient:
                 tickets.append(ticket)
         return tickets
 
+    def get_at_risk_subtasks(self) -> list:
+        """Fetch subtasks that are at risk — scoped to at-risk parent tickets."""
+        jql = (
+            f'project in ({self._project_list()}) '
+            f'AND sprint in openSprints() '
+            f'AND issuetype in subTaskIssueTypes() '
+            f'AND status in ("To Do", "In Progress", "Blocked", "In Review")'
+        )
+        if self.config.jira_extra_jql:
+            jql += f" AND {self.config.jira_extra_jql}"
+        jql += " ORDER BY updated ASC"
+
+        data = self._get(
+            "/rest/api/2/search",
+            {
+                "jql": jql,
+                "maxResults": 100,
+                "fields": "summary,status,assignee,priority,updated,duedate,labels,comment,parent",
+            },
+        )
+
+        subtasks = []
+        for issue in data.get("issues", []):
+            ticket = self._parse_issue(issue)
+            # Attach parent key to summary for context
+            parent = issue["fields"].get("parent", {})
+            parent_key = parent.get("key", "")
+            if parent_key:
+                ticket.summary = f"[{parent_key}] {ticket.summary}"
+            if self._is_at_risk(ticket) and not self._is_excluded(ticket):
+                subtasks.append(ticket)
+        return subtasks
+
     def get_nudge_tickets(self) -> list:
         """Tickets that haven't been updated for >= nudge_days but < stalled_days."""
         if self.config.nudge_days <= 0:
             return []
         jql = (
             f'project in ({self._project_list()}) '
+            f'AND sprint in openSprints() '
             f'AND status in ("In Progress", "In Review")'
         )
         if self.config.jira_extra_jql:

@@ -32,15 +32,23 @@ class JiraRiskDetectorAgent:
             logger.exception("Failed to fetch Jira tickets")
             return
 
-        if not at_risk_tickets:
+        try:
+            subtasks = self.jira.get_at_risk_subtasks()
+            logger.info("%d at-risk subtask(s) found.", len(subtasks))
+        except Exception:
+            logger.exception("Failed to fetch subtasks")
+            subtasks = []
+
+        if not at_risk_tickets and not subtasks:
             logger.info("No at-risk tickets. Sending all-clear.")
             self.notifier.send_all_clear()
             return
 
-        logger.info("%d at-risk ticket(s) found. Analyzing...", len(at_risk_tickets))
+        all_at_risk = at_risk_tickets + subtasks
+        logger.info("%d ticket(s) + %d subtask(s) found. Analyzing...", len(at_risk_tickets), len(subtasks))
 
         analyzed = []
-        for ticket in at_risk_tickets:
+        for ticket in all_at_risk:
             try:
                 analysis = self.analyzer.analyze_ticket(ticket)
                 analyzed.append((ticket, analysis))
@@ -52,13 +60,19 @@ class JiraRiskDetectorAgent:
             logger.error("All analyses failed. Aborting notifications.")
             return
 
+        analyzed_main = [(t, a) for t, a in analyzed if not t.key.startswith("subtask")]
+        # Split by whether summary starts with [PARENT-KEY] pattern
+        import re
+        analyzed_tickets_only = [(t, a) for t, a in analyzed if not re.match(r'^\[.+-\d+\]', t.summary)]
+        analyzed_subtasks_only = [(t, a) for t, a in analyzed if re.match(r'^\[.+-\d+\]', t.summary)]
+
         try:
             all_tickets = self.jira.get_all_active_tickets()
-            self.notifier.send_tpm_summary(analyzed, all_tickets=all_tickets)
+            self.notifier.send_tpm_summary(analyzed_tickets_only, all_tickets=all_tickets, subtasks=analyzed_subtasks_only)
         except Exception:
             logger.exception("Failed to send TPM summary")
 
         try:
-            self.notifier.send_tpm_report(analyzed)  # detail → channel
+            self.notifier.send_tpm_report(analyzed_tickets_only, subtasks=analyzed_subtasks_only)
         except Exception:
             logger.exception("Failed to send channel report")
