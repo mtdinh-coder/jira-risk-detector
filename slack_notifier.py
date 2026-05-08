@@ -22,19 +22,25 @@ class SlackNotifier:
 
     def send_all_clear(self) -> None:
         today = date.today().strftime("%B %d, %Y")
-        blocks = [
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": (
-                        f":white_check_mark: *Jira Risk Detector — {today}*\n\n"
-                        "No stalled, blocked, or overdue tickets found in the current sprint. All clear!"
-                    ),
-                },
-            }
-        ]
+        text = (
+            f":white_check_mark: *Jira Risk Detector — {today}*\n\n"
+            "Các tasks đã được cập nhật đầy đủ. Chúc mọi người một ngày làm việc năng suất! 🎉"
+        )
+        blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": text}}]
         self._dm_tpm(blocks, fallback="Jira Risk Detector: All clear today.")
+        # Also post to channel
+        if self.dry_run:
+            import json
+            logger.info("[DRY RUN] All-clear channel message:\n%s", text)
+            return
+        try:
+            self.client.chat_postMessage(
+                channel=self.team_channel_id,
+                text=text,
+                mrkdwn=True,
+            )
+        except SlackApiError as e:
+            logger.error("Failed to post all-clear to channel: %s", e.response["error"])
 
     def send_tpm_summary(self, analyzed_tickets: list, all_tickets: list = None, subtasks: list = None) -> None:
         """Send a concise DM to TPM: summary + workload chart per assignee."""
