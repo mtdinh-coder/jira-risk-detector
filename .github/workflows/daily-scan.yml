@@ -2,7 +2,7 @@ name: Jira Risk Detector — Daily Scan
 
 on:
   schedule:
-    - cron: "0 2 * * 1-5"  # 9:00 AM ICT (UTC+7), Mon–Fri
+    - cron: "0 2 * * 1,4"  # 9:00 AM ICT (UTC+7), Mon & Thu
   workflow_dispatch:       # manual trigger from GitHub UI
 
 jobs:
