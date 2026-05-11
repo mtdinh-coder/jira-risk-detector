@@ -27,8 +27,16 @@ class JiraTicket:
 
     @property
     def days_since_update(self) -> int:
+        """Number of working days (Mon–Fri) since last update."""
         updated_dt = datetime.fromisoformat(self.updated.replace("Z", "+00:00"))
-        return (datetime.now(timezone.utc) - updated_dt).days
+        now = datetime.now(timezone.utc)
+        count = 0
+        current = updated_dt
+        while current.date() < now.date():
+            current += __import__('datetime').timedelta(days=1)
+            if current.weekday() < 5:  # Mon=0 ... Fri=4
+                count += 1
+        return count
 
     @property
     def days_until_due(self) -> Optional[int]:
