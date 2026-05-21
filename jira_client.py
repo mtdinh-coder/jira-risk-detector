@@ -72,7 +72,6 @@ class JiraClient:
         """Fetch all active tickets for the workload chart (no at-risk filter)."""
         jql = (
             f'project in ({self._project_list()}) '
-            f'AND sprint in openSprints() '
             f'AND status in ("To Do", "In Progress", "Blocked", "In Review") '
             f'AND assignee is not EMPTY'
         )
@@ -92,7 +91,6 @@ class JiraClient:
     def get_at_risk_tickets(self) -> list:
         jql = (
             f'project in ({self._project_list()}) '
-            f'AND sprint in openSprints() '
             f'AND status in ("To Do", "In Progress", "Blocked", "In Review") '
             f'AND issuetype in standardIssueTypes()'
         )
@@ -120,7 +118,6 @@ class JiraClient:
         """Fetch subtasks that are at risk — scoped to at-risk parent tickets."""
         jql = (
             f'project in ({self._project_list()}) '
-            f'AND sprint in openSprints() '
             f'AND issuetype in subTaskIssueTypes() '
             f'AND status in ("To Do", "In Progress", "Blocked", "In Review")'
         )
@@ -155,7 +152,6 @@ class JiraClient:
             return []
         jql = (
             f'project in ({self._project_list()}) '
-            f'AND sprint in openSprints() '
             f'AND status in ("In Progress", "In Review")'
         )
         if self.config.jira_extra_jql:
