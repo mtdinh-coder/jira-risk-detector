@@ -72,6 +72,7 @@ class JiraClient:
         """Fetch all active tickets for the workload chart (no at-risk filter)."""
         jql = (
             f'project in ({self._project_list()}) '
+            f'{self._sprint_clause()}'
             f'AND status in ("To Do", "In Progress", "Blocked", "In Review") '
             f'AND assignee is not EMPTY'
         )
@@ -91,6 +92,7 @@ class JiraClient:
     def get_at_risk_tickets(self) -> list:
         jql = (
             f'project in ({self._project_list()}) '
+            f'{self._sprint_clause()}'
             f'AND status in ("To Do", "In Progress", "Blocked", "In Review") '
             f'AND issuetype in standardIssueTypes()'
         )
@@ -118,6 +120,7 @@ class JiraClient:
         """Fetch subtasks that are at risk — scoped to at-risk parent tickets."""
         jql = (
             f'project in ({self._project_list()}) '
+            f'{self._sprint_clause()}'
             f'AND issuetype in subTaskIssueTypes() '
             f'AND status in ("To Do", "In Progress", "Blocked", "In Review")'
         )
@@ -152,6 +155,7 @@ class JiraClient:
             return []
         jql = (
             f'project in ({self._project_list()}) '
+            f'{self._sprint_clause()}'
             f'AND status in ("In Progress", "In Review")'
         )
         if self.config.jira_extra_jql:
@@ -254,6 +258,20 @@ class JiraClient:
         """Return comma-separated quoted project keys for use in JQL 'project in (...)'."""
         keys = [k.strip() for k in self.config.jira_project_key.split(",") if k.strip()]
         return ", ".join(f'"{k}"' for k in keys)
+
+    def _sprint_clause(self) -> str:
+        """Return sprint JQL clause if supported, empty string otherwise."""
+        if not getattr(self, '_sprint_supported', None):
+            try:
+                self._get("/rest/api/2/search", {
+                    "jql": f'project in ({self._project_list()}) AND sprint in openSprints()',
+                    "maxResults": 1,
+                    "fields": "summary",
+                })
+                self._sprint_supported = True
+            except Exception:
+                self._sprint_supported = False
+        return "AND sprint in openSprints() " if self._sprint_supported else ""
 
     def _get(self, endpoint: str, params: dict = None) -> dict:
         response = requests.get(
