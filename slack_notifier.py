@@ -59,8 +59,8 @@ class SlackNotifier:
                 if t.assignee_email:
                     emails[name] = t.assignee_email
 
-            STATUS_ORDER = ["In Progress", "In Review", "Blocked"]
-            STATUS_ICON = {"In Progress": "🟡", "In Review": "🔵", "Blocked": "🔴"}
+            STATUS_ORDER = ["To Do", "In Progress", "In Review", "Blocked"]
+            STATUS_ICON = {"To Do": "⚪", "In Progress": "🟡", "In Review": "🔵", "Blocked": "🔴"}
 
             # Build map: assignee → list of ticket keys that have at-risk subtasks
             import re as _re
@@ -341,7 +341,7 @@ class SlackNotifier:
                 "text": {
                     "type": "mrkdwn",
                     "text": (
-                        f"{icon} *<{url}|{ticket.key}>* — {ticket.summary}\n"
+                        f"{icon} *<{url}|{ticket.key}>* — {ticket.summary.split('] ', 1)[-1] if ticket.summary.startswith('[') else ticket.summary}\n"
                         f"*Assignee:* {mention}   *Status:* {ticket.status}\n"
                         f":arrow_right: {analysis.recommended_action}"
                     ),
