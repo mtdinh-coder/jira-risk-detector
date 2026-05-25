@@ -87,7 +87,8 @@ class JiraClient:
                 "fields": "summary,status,assignee",
             },
         )
-        return [self._parse_issue(issue) for issue in data.get("issues", [])]
+        tickets = [self._parse_issue(issue) for issue in data.get("issues", [])]
+        return [t for t in tickets if not self._is_excluded(t)]
 
     def get_at_risk_tickets(self) -> list:
         jql = (
